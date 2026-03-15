@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smoking Tracker</title>
+
+<style>
+
+body{
+font-family:-apple-system,Arial;
+background:#f2f2f7;
+display:flex;
+justify-content:center;
+margin:0;
+}
+
+.container{
+max-width:430px;
+width:100%;
+padding:16px;
+}
+
+.card{
+background:white;
+border-radius:16px;
+padding:16px;
+margin-top:16px;
+box-shadow:0 4px 10px rgba(0,0,0,0.08);
+}
+
+.count{
+font-size:42px;
+text-align:center;
+font-weight:bold;
+}
+
+.timer{
+text-align:center;
+color:#ff3b30;
+margin-top:8px;
+}
+
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+font-size:18px;
+margin-top:10px;
+cursor:pointer;
+}
+
+.smoke{background:#ff3b30;color:white;}
+.add{background:#007aff;color:white;}
+
+input{
+width:100%;
+padding:12px;
+border-radius:12px;
+border:1px solid #ddd;
+margin-top:8px;
+}
+
+.entry{
+display:flex;
+justify-content:space-between;
+padding:8px 0;
+border-bottom:1px solid #eee;
+}
+
+.delete{
+width:32px;
+height:32px;
+border-radius:8px;
+background:#ff3b30;
+color:white;
+border:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🚬 Smoking Tracker</h2>
+
+<div class="card">
+
+<div style="text-align:center">Hôm nay hút</div>
+
+<div id="count" class="count">0</div>
+
+<div id="timer" class="timer">
+Chưa hút hôm nay
+</div>
+
+<button class="smoke" onclick="addNow()">
+Tôi vừa hút
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>Thêm nếu quên</h3>
+
+<input type="datetime-local" id="manualTime">
+
+<button class="add" onclick="addManual()">
+Thêm
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>Xem dữ liệu</h3>
+
+<input type="date" onchange="showDay(this.value)">
+
+</div>
+
+<div class="card" id="log"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+
+import {
+getFirestore,
+doc,
+getDoc,
+setDoc
+}
+from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyDdj...",
+authDomain: "smoking-2ed78.firebaseapp.com",
+projectId: "smoking-2ed78",
+storageBucket: "smoking-2ed78.appspot.com",
+messagingSenderId: "736573061791",
+appId: "1:736573061791:web:ba872ff299f2eaf70380aa",
+measurementId: "G-ZQNWPGB8BW"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let lastSmoke=null;
+
+function formatDate(d){
+return d.toISOString().split("T")[0];
+}
+
+async function getData(){
+
+const snap=await getDoc(doc(db,"smoking","data"));
+
+if(snap.exists()) return snap.data();
+
+return {};
+
+}
+
+async function saveData(data){
+
+await setDoc(doc(db,"smoking","data"),data);
+
+}
+
+window.addNow = async function(){
+
+let data=await getData();
+
+let now=new Date();
+
+let day=formatDate(now);
+
+if(!data[day]) data[day]=[];
+
+data[day].push(now.toISOString());
+
+await saveData(data);
+
+lastSmoke=now;
+
+updateToday();
+
+showDay(day);
+
+}
+
+window.addManual = async function(){
+
+let input=document.getElementById("manualTime").value;
+
+if(!input) return;
+
+let date=new Date(input);
+
+let day=formatDate(date);
+
+let data=await getData();
+
+if(!data[day]) data[day]=[];
+
+data[day].push(date.toISOString());
+
+await saveData(data);
+
+lastSmoke=date;
+
+updateToday();
+
+showDay(day);
+
+}
+
+async function updateToday(){
+
+let data=await getData();
+
+let today=formatDate(new Date());
+
+let list=data[today]||[];
+
+document.getElementById("count").innerText=list.length;
+
+if(list.length){
+
+lastSmoke=new Date(list[list.length-1]);
+
+}
+
+}
+
+window.showDay = async function(day){
+
+let data=await getData();
+
+let list=data[day]||[];
+
+list.sort();
+
+let html="<b>"+day+"</b><br><br>";
+
+if(list.length===0){
+
+html+="🎉 Không hút";
+
+}else{
+
+for(let i=0;i<list.length;i++){
+
+let t=new Date(list[i]);
+
+let time=t.toLocaleTimeString();
+
+html+=`
+<div class="entry">
+<span>${time}</span>
+<button class="delete" onclick="deleteEntry('${day}',${i})">🗑</button>
+</div>
+`;
+
+}
+
+}
+
+document.getElementById("log").innerHTML=html;
+
+}
+
+window.deleteEntry = async function(day,index){
+
+if(!confirm("Xóa lần hút này?")) return;
+
+let data=await getData();
+
+data[day].splice(index,1);
+
+if(data[day].length===0){
+delete data[day];
+}
+
+await saveData(data);
+
+updateToday();
+
+showDay(day);
+
+}
+
+function updateTimer(){
+
+if(!lastSmoke){
+
+document.getElementById("timer").innerText="Chưa hút hôm nay";
+
+return;
+
+}
+
+let now=new Date();
+
+let diff=Math.floor((now-lastSmoke)/1000);
+
+let h=Math.floor(diff/3600);
+let m=Math.floor((diff%3600)/60);
+let s=diff%60;
+
+document.getElementById("timer").innerText=
+"Lần hút gần nhất: "+h+"h "+m+"m "+s+"s";
+
+}
+
+setInterval(updateTimer,1000);
+
+updateToday();
+
+</script>
+
+</body>
+</html>
