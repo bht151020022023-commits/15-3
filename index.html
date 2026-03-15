@@ -80,6 +80,11 @@ display:flex;
 align-items:center;
 justify-content:center;
 }
+
+.toggle{
+cursor:pointer;
+font-weight:bold;
+}
 </style>
 </head>
 
@@ -93,6 +98,7 @@ justify-content:center;
 <div style="text-align:center">Hôm nay hút</div>
 <div id="count" class="count">0</div>
 <div id="timer" class="timer">Chưa hút hôm nay</div>
+
 <button class="smoke" onclick="addNow()">Tôi vừa hút</button>
 </div>
 
@@ -103,11 +109,16 @@ justify-content:center;
 </div>
 
 <div class="card">
-<h3>Xem dữ liệu</h3>
-<input type="date" onchange="showDay(this.value)">
-</div>
+<h3 class="toggle" onclick="toggleData()">Xem dữ liệu</h3>
 
-<div class="card" id="log"></div>
+<div id="dataBox" style="display:none">
+
+<input type="date" onchange="showDay(this.value)">
+
+<div id="log"></div>
+
+</div>
+</div>
 
 </div>
 
@@ -154,6 +165,7 @@ await setDoc(doc(db,"smoking","data"),data);
 }
 
 window.addNow = async function(){
+
 let data=await getData();
 let now=new Date();
 let day=formatDate(now);
@@ -170,6 +182,7 @@ showDay(day);
 }
 
 window.addManual = async function(){
+
 let input=document.getElementById("manualTime").value;
 if(!input) return;
 
@@ -190,6 +203,7 @@ showDay(day);
 }
 
 async function updateToday(){
+
 let data=await getData();
 let today=formatDate(new Date());
 let list=data[today]||[];
@@ -202,34 +216,60 @@ lastSmoke=new Date(list[list.length-1]);
 }
 
 window.showDay = async function(day){
+
 let data=await getData();
 let list=data[day]||[];
 
 list.sort();
 
-let html="<b>"+day+"</b><br><br>";
+let html="<br><b>"+day+"</b><br><br>";
 
 if(list.length===0){
+
 html+="🎉 Không hút";
+
 }else{
 
 for(let i=0;i<list.length;i++){
+
 let t=new Date(list[i]);
 let time=t.toLocaleTimeString();
 
+let diffText="";
+
+if(i>0){
+
+let prev=new Date(list[i-1]);
+let diff=Math.floor((t-prev)/60000);
+
+let h=Math.floor(diff/60);
+let m=diff%60;
+
+if(h>0){
+diffText=" (+"+h+"h "+m+"m)";
+}else{
+diffText=" (+"+m+" phút)";
+}
+
+}
+
 html+=`
 <div class="entry">
-<div>${time}</div>
+<div>${time}${diffText}</div>
 <button class="delete" onclick="deleteEntry('${day}',${i})">🗑</button>
 </div>
 `;
+
 }
+
 }
 
 document.getElementById("log").innerHTML=html;
+
 }
 
 window.deleteEntry = async function(day,index){
+
 if(!confirm("Xóa lần hút này?")) return;
 
 let data=await getData();
@@ -260,8 +300,20 @@ let h=Math.floor(diff/3600);
 let m=Math.floor((diff%3600)/60);
 let s=diff%60;
 
-document.getElementById("timer").innerText =
+document.getElementById("timer").innerText=
 "Lần hút gần nhất: "+h+"h "+m+"m "+s+"s";
+}
+
+function toggleData(){
+
+let box=document.getElementById("dataBox");
+
+if(box.style.display==="none"){
+box.style.display="block";
+}else{
+box.style.display="none";
+}
+
 }
 
 setInterval(updateTimer,1000);
