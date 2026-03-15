@@ -6,7 +6,6 @@
 <title>Smoking Tracker</title>
 
 <style>
-
 body{
 font-family:-apple-system,Arial;
 background:#f2f2f7;
@@ -65,7 +64,8 @@ margin-top:8px;
 .entry{
 display:flex;
 justify-content:space-between;
-padding:8px 0;
+align-items:center;
+padding:10px 0;
 border-bottom:1px solid #eee;
 }
 
@@ -76,10 +76,11 @@ border-radius:8px;
 background:#ff3b30;
 color:white;
 border:none;
+display:flex;
+align-items:center;
+justify-content:center;
 }
-
 </style>
-
 </head>
 
 <body>
@@ -89,39 +90,21 @@ border:none;
 <h2>🚬 Smoking Tracker</h2>
 
 <div class="card">
-
 <div style="text-align:center">Hôm nay hút</div>
-
 <div id="count" class="count">0</div>
-
-<div id="timer" class="timer">
-Chưa hút hôm nay
-</div>
-
-<button class="smoke" onclick="addNow()">
-Tôi vừa hút
-</button>
-
+<div id="timer" class="timer">Chưa hút hôm nay</div>
+<button class="smoke" onclick="addNow()">Tôi vừa hút</button>
 </div>
 
 <div class="card">
-
 <h3>Thêm nếu quên</h3>
-
 <input type="datetime-local" id="manualTime">
-
-<button class="add" onclick="addManual()">
-Thêm
-</button>
-
+<button class="add" onclick="addManual()">Thêm</button>
 </div>
 
 <div class="card">
-
 <h3>Xem dữ liệu</h3>
-
 <input type="date" onchange="showDay(this.value)">
-
 </div>
 
 <div class="card" id="log"></div>
@@ -161,31 +144,21 @@ return d.toISOString().split("T")[0];
 }
 
 async function getData(){
-
 const snap=await getDoc(doc(db,"smoking","data"));
-
 if(snap.exists()) return snap.data();
-
 return {};
-
 }
 
 async function saveData(data){
-
 await setDoc(doc(db,"smoking","data"),data);
-
 }
 
 window.addNow = async function(){
-
 let data=await getData();
-
 let now=new Date();
-
 let day=formatDate(now);
 
 if(!data[day]) data[day]=[];
-
 data[day].push(now.toISOString());
 
 await saveData(data);
@@ -193,25 +166,19 @@ await saveData(data);
 lastSmoke=now;
 
 updateToday();
-
 showDay(day);
-
 }
 
 window.addManual = async function(){
-
 let input=document.getElementById("manualTime").value;
-
 if(!input) return;
 
 let date=new Date(input);
-
 let day=formatDate(date);
 
 let data=await getData();
 
 if(!data[day]) data[day]=[];
-
 data[day].push(date.toISOString());
 
 await saveData(data);
@@ -219,33 +186,23 @@ await saveData(data);
 lastSmoke=date;
 
 updateToday();
-
 showDay(day);
-
 }
 
 async function updateToday(){
-
 let data=await getData();
-
 let today=formatDate(new Date());
-
 let list=data[today]||[];
 
 document.getElementById("count").innerText=list.length;
 
 if(list.length){
-
 lastSmoke=new Date(list[list.length-1]);
-
 }
-
 }
 
 window.showDay = async function(day){
-
 let data=await getData();
-
 let list=data[day]||[];
 
 list.sort();
@@ -253,34 +210,26 @@ list.sort();
 let html="<b>"+day+"</b><br><br>";
 
 if(list.length===0){
-
 html+="🎉 Không hút";
-
 }else{
 
 for(let i=0;i<list.length;i++){
-
 let t=new Date(list[i]);
-
 let time=t.toLocaleTimeString();
 
 html+=`
 <div class="entry">
-<span>${time}</span>
+<div>${time}</div>
 <button class="delete" onclick="deleteEntry('${day}',${i})">🗑</button>
 </div>
 `;
-
 }
-
 }
 
 document.getElementById("log").innerHTML=html;
-
 }
 
 window.deleteEntry = async function(day,index){
-
 if(!confirm("Xóa lần hút này?")) return;
 
 let data=await getData();
@@ -294,32 +243,25 @@ delete data[day];
 await saveData(data);
 
 updateToday();
-
 showDay(day);
-
 }
 
 function updateTimer(){
 
 if(!lastSmoke){
-
 document.getElementById("timer").innerText="Chưa hút hôm nay";
-
 return;
-
 }
 
 let now=new Date();
-
 let diff=Math.floor((now-lastSmoke)/1000);
 
 let h=Math.floor(diff/3600);
 let m=Math.floor((diff%3600)/60);
 let s=diff%60;
 
-document.getElementById("timer").innerText=
+document.getElementById("timer").innerText =
 "Lần hút gần nhất: "+h+"h "+m+"m "+s+"s";
-
 }
 
 setInterval(updateTimer,1000);
