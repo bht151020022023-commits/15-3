@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smoking</title>
+<title>Smoking Tracker</title>
 
 <style>
 body{
@@ -64,8 +64,7 @@ margin-top:8px;
 .entry{
 display:flex;
 justify-content:space-between;
-align-items:center;
-padding:10px 0;
+padding:8px 0;
 border-bottom:1px solid #eee;
 }
 
@@ -76,29 +75,21 @@ border-radius:8px;
 background:#ff3b30;
 color:white;
 border:none;
-display:flex;
-align-items:center;
-justify-content:center;
-}
-
-.toggle{
-cursor:pointer;
-font-weight:bold;
 }
 </style>
+
 </head>
 
 <body>
 
 <div class="container">
 
-<h2>🚬 Smoking </h2>
+<h2>🚬 Smoking</h2>
 
 <div class="card">
 <div style="text-align:center">Hôm nay hút</div>
 <div id="count" class="count">0</div>
 <div id="timer" class="timer">Chưa hút hôm nay</div>
-
 <button class="smoke" onclick="addNow()">Tôi vừa hút</button>
 </div>
 
@@ -109,18 +100,11 @@ font-weight:bold;
 </div>
 
 <div class="card">
-
-<h3 class="toggle" id="toggleBtn">Xem dữ liệu</h3>
-
-<div id="dataBox" style="display:none">
-
-<input type="date" id="datePicker">
-
-<div id="log"></div>
-
+<h3>Xem dữ liệu</h3>
+<input type="date" onchange="showDay(this.value)">
 </div>
 
-</div>
+<div class="card" id="log"></div>
 
 </div>
 
@@ -143,14 +127,14 @@ authDomain: "smoking-2ed78.firebaseapp.com",
 projectId: "smoking-2ed78",
 storageBucket: "smoking-2ed78.appspot.com",
 messagingSenderId: "736573061791",
-appId: "1:736573061791:web:ba872ff299f2eaf70380aa",
-measurementId: "G-ZQNWPGB8BW"
+appId: "1:736573061791:web:ba872ff299f2eaf70380aa"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let lastSmoke=null;
+let currentDay=formatDate(new Date());
 
 function formatDate(d){
 return d.toISOString().split("T")[0];
@@ -181,18 +165,15 @@ await saveData(data);
 lastSmoke=now;
 
 updateToday();
-showDay(day);
 
 }
 
 window.addManual = async function(){
 
 let input=document.getElementById("manualTime").value;
-
 if(!input) return;
 
 let date=new Date(input);
-
 let day=formatDate(date);
 
 let data=await getData();
@@ -206,16 +187,13 @@ await saveData(data);
 lastSmoke=date;
 
 updateToday();
-showDay(day);
 
 }
 
 async function updateToday(){
 
 let data=await getData();
-
 let today=formatDate(new Date());
-
 let list=data[today]||[];
 
 document.getElementById("count").innerText=list.length;
@@ -229,12 +207,11 @@ lastSmoke=new Date(list[list.length-1]);
 window.showDay = async function(day){
 
 let data=await getData();
-
 let list=data[day]||[];
 
 list.sort();
 
-let html="<br><b>"+day+"</b><br><br>";
+let html="<b>"+day+"</b><br><br>";
 
 if(list.length===0){
 
@@ -245,31 +222,11 @@ html+="🎉 Không hút";
 for(let i=0;i<list.length;i++){
 
 let t=new Date(list[i]);
-
 let time=t.toLocaleTimeString();
-
-let diffText="";
-
-if(i>0){
-
-let prev=new Date(list[i-1]);
-
-let diff=Math.floor((t-prev)/60000);
-
-let h=Math.floor(diff/60);
-let m=diff%60;
-
-if(h>0){
-diffText=" (+"+h+"h "+m+"m)";
-}else{
-diffText=" (+"+m+" phút)";
-}
-
-}
 
 html+=`
 <div class="entry">
-<div>${time}${diffText}</div>
+<span>${time}</span>
 <button class="delete" onclick="deleteEntry('${day}',${i})">🗑</button>
 </div>
 `;
@@ -297,6 +254,7 @@ delete data[day];
 await saveData(data);
 
 updateToday();
+
 showDay(day);
 
 }
@@ -316,40 +274,28 @@ let h=Math.floor(diff/3600);
 let m=Math.floor((diff%3600)/60);
 let s=diff%60;
 
-document.getElementById("timer").innerText =
+document.getElementById("timer").innerText=
 "Lần hút gần nhất: "+h+"h "+m+"m "+s+"s";
 
 }
 
-function toggleData(){
-
-let box=document.getElementById("dataBox");
-
-if(box.style.display==="none" || box.style.display===""){
-
-box.style.display="block";
-
-let today=new Date().toISOString().split("T")[0];
-
-document.getElementById("datePicker").value=today;
-
-showDay(today);
-
-}else{
-
-box.style.display="none";
-
-}
-
-}
-
-document.getElementById("toggleBtn").addEventListener("click",toggleData);
-
-document.getElementById("datePicker").addEventListener("change",(e)=>{
-showDay(e.target.value);
-});
-
 setInterval(updateTimer,1000);
+
+setInterval(()=>{
+
+let newDay=formatDate(new Date());
+
+if(newDay!==currentDay){
+
+currentDay=newDay;
+
+updateToday();
+
+document.getElementById("log").innerHTML="";
+
+}
+
+},60000);
 
 updateToday();
 
