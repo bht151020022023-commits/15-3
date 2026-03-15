@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smoking Tracker</title>
+<title>Smoking</title>
 
 <style>
 body{
@@ -103,21 +103,23 @@ font-weight:bold;
 </div>
 
 <div class="card">
-<h3>Thêm nếu quên</h3>
+<h3>Add</h3>
 <input type="datetime-local" id="manualTime">
 <button class="add" onclick="addManual()">Thêm</button>
 </div>
 
 <div class="card">
-<h3 class="toggle" onclick="toggleData()">Xem dữ liệu</h3>
+
+<h3 class="toggle" id="toggleBtn">Xem dữ liệu</h3>
 
 <div id="dataBox" style="display:none">
 
-<input type="date" onchange="showDay(this.value)">
+<input type="date" id="datePicker">
 
 <div id="log"></div>
 
 </div>
+
 </div>
 
 </div>
@@ -171,6 +173,7 @@ let now=new Date();
 let day=formatDate(now);
 
 if(!data[day]) data[day]=[];
+
 data[day].push(now.toISOString());
 
 await saveData(data);
@@ -179,19 +182,23 @@ lastSmoke=now;
 
 updateToday();
 showDay(day);
+
 }
 
 window.addManual = async function(){
 
 let input=document.getElementById("manualTime").value;
+
 if(!input) return;
 
 let date=new Date(input);
+
 let day=formatDate(date);
 
 let data=await getData();
 
 if(!data[day]) data[day]=[];
+
 data[day].push(date.toISOString());
 
 await saveData(data);
@@ -200,12 +207,15 @@ lastSmoke=date;
 
 updateToday();
 showDay(day);
+
 }
 
 async function updateToday(){
 
 let data=await getData();
+
 let today=formatDate(new Date());
+
 let list=data[today]||[];
 
 document.getElementById("count").innerText=list.length;
@@ -213,11 +223,13 @@ document.getElementById("count").innerText=list.length;
 if(list.length){
 lastSmoke=new Date(list[list.length-1]);
 }
+
 }
 
 window.showDay = async function(day){
 
 let data=await getData();
+
 let list=data[day]||[];
 
 list.sort();
@@ -233,6 +245,7 @@ html+="🎉 Không hút";
 for(let i=0;i<list.length;i++){
 
 let t=new Date(list[i]);
+
 let time=t.toLocaleTimeString();
 
 let diffText="";
@@ -240,6 +253,7 @@ let diffText="";
 if(i>0){
 
 let prev=new Date(list[i-1]);
+
 let diff=Math.floor((t-prev)/60000);
 
 let h=Math.floor(diff/60);
@@ -284,6 +298,7 @@ await saveData(data);
 
 updateToday();
 showDay(day);
+
 }
 
 function updateTimer(){
@@ -294,27 +309,45 @@ return;
 }
 
 let now=new Date();
+
 let diff=Math.floor((now-lastSmoke)/1000);
 
 let h=Math.floor(diff/3600);
 let m=Math.floor((diff%3600)/60);
 let s=diff%60;
 
-document.getElementById("timer").innerText=
+document.getElementById("timer").innerText =
 "Lần hút gần nhất: "+h+"h "+m+"m "+s+"s";
+
 }
 
 function toggleData(){
 
 let box=document.getElementById("dataBox");
 
-if(box.style.display==="none"){
+if(box.style.display==="none" || box.style.display===""){
+
 box.style.display="block";
+
+let today=new Date().toISOString().split("T")[0];
+
+document.getElementById("datePicker").value=today;
+
+showDay(today);
+
 }else{
+
 box.style.display="none";
+
 }
 
 }
+
+document.getElementById("toggleBtn").addEventListener("click",toggleData);
+
+document.getElementById("datePicker").addEventListener("change",(e)=>{
+showDay(e.target.value);
+});
 
 setInterval(updateTimer,1000);
 
