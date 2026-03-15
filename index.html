@@ -134,31 +134,46 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let lastSmoke=null;
-let currentDay=formatDate(new Date());
 
 function formatDate(d){
-return d.toISOString().split("T")[0];
+
+let y=d.getFullYear();
+let m=String(d.getMonth()+1).padStart(2,"0");
+let day=String(d.getDate()).padStart(2,"0");
+
+return `${y}-${m}-${day}`;
+
 }
 
+let currentDay=formatDate(new Date());
+
 async function getData(){
+
 const snap=await getDoc(doc(db,"smoking","data"));
+
 if(snap.exists()) return snap.data();
+
 return {};
+
 }
 
 async function saveData(data){
+
 await setDoc(doc(db,"smoking","data"),data);
+
 }
 
 window.addNow = async function(){
 
 let data=await getData();
+
 let now=new Date();
+
 let day=formatDate(now);
 
 if(!data[day]) data[day]=[];
 
-data[day].push(now.toISOString());
+data[day].push(now.getTime());
 
 await saveData(data);
 
@@ -171,16 +186,18 @@ updateToday();
 window.addManual = async function(){
 
 let input=document.getElementById("manualTime").value;
+
 if(!input) return;
 
 let date=new Date(input);
+
 let day=formatDate(date);
 
 let data=await getData();
 
 if(!data[day]) data[day]=[];
 
-data[day].push(date.toISOString());
+data[day].push(date.getTime());
 
 await saveData(data);
 
@@ -193,13 +210,17 @@ updateToday();
 async function updateToday(){
 
 let data=await getData();
+
 let today=formatDate(new Date());
+
 let list=data[today]||[];
 
 document.getElementById("count").innerText=list.length;
 
 if(list.length){
 lastSmoke=new Date(list[list.length-1]);
+}else{
+lastSmoke=null;
 }
 
 }
@@ -207,6 +228,7 @@ lastSmoke=new Date(list[list.length-1]);
 window.showDay = async function(day){
 
 let data=await getData();
+
 let list=data[day]||[];
 
 list.sort();
@@ -222,6 +244,7 @@ html+="🎉 Không hút";
 for(let i=0;i<list.length;i++){
 
 let t=new Date(list[i]);
+
 let time=t.toLocaleTimeString();
 
 html+=`
@@ -262,8 +285,11 @@ showDay(day);
 function updateTimer(){
 
 if(!lastSmoke){
+
 document.getElementById("timer").innerText="Chưa hút hôm nay";
+
 return;
+
 }
 
 let now=new Date();
@@ -289,13 +315,17 @@ if(newDay!==currentDay){
 
 currentDay=newDay;
 
-updateToday();
+lastSmoke=null;
+
+document.getElementById("count").innerText=0;
+
+document.getElementById("timer").innerText="Chưa hút hôm nay";
 
 document.getElementById("log").innerHTML="";
 
 }
 
-},60000);
+},30000);
 
 updateToday();
 
